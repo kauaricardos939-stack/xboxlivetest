@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xbox Live Test - Connection</title>
+    <style>
+        body { 
+            background: #101010; color: white; 
+            font-family: 'Segoe UI', Tahoma, sans-serif; 
+            display: flex; flex-direction: column; align-items: center; 
+            justify-content: center; height: 100vh; margin: 0; 
+        }
+        .card { 
+            background: #202020; padding: 30px; border-radius: 10px; 
+            border-bottom: 4px solid #107c10; width: 320px; text-align: center; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        h2 { font-weight: 300; margin-bottom: 20px; }
+        input { 
+            width: 100%; padding: 12px; margin: 10px 0; 
+            border: none; border-radius: 5px; background: #333; color: white;
+            box-sizing: border-box; font-size: 16px;
+        }
+        button { 
+            background: #107c10; color: white; border: none; 
+            padding: 12px; cursor: pointer; font-weight: bold; 
+            width: 100%; border-radius: 5px; font-size: 14px;
+            transition: 0.2s;
+        }
+        button:hover { background: #158a15; transform: scale(1.02); }
+        
+        #lista-online { margin-top: 30px; width: 320px; }
+        #lista-online h3 { font-size: 14px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .amigo { 
+            background: #252525; padding: 15px; margin-bottom: 8px; 
+            border-radius: 5px; display: flex; align-items: center; 
+            justify-content: space-between; border-left: 4px solid #107c10;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        
+        .status-dot { 
+            height: 10px; width: 10px; background-color: #107c10; 
+            border-radius: 50%; display: inline-block; margin-right: 12px; 
+            box-shadow: 0 0 8px #107c10;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card" id="login-section">
+        <svg width="50" height="50" viewBox="0 0 100 100" style="margin-bottom: 10px;">
+            <circle cx="50" cy="50" r="48" fill="none" stroke="#107c10" stroke-width="2"/>
+            <path d="M20 20 L80 80 M80 20 L20 80" stroke="#107c10" stroke-width="8" stroke-linecap="round"/>
+        </svg>
+        <h2>Xbox Live</h2>
+        <input type="text" id="gamertag" placeholder="Digite sua Gamertag...">
+        <button onclick="conectar()">ENTRAR NA LIVE</button>
+    </div>
+
+    <div id="lista-online" style="display: none;">
+        <h3>Amigos Online</h3>
+        <div id="usuarios-container"></div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+
+    <script>
+        // ATENÇÃO: COPIE O BLOCO ABAIXO DO SEU CONSOLE FIREBASE
+        const firebaseConfig = {
+            apiKey: "COLE_AQUI_SUA_API_KEY",
+            authDomain: "SEU_PROJETO.firebaseapp.com",
+            databaseURL: "https://SEU_PROJETO-default-rtdb.firebaseio.com",
+            projectId: "SEU_PROJETO",
+            storageBucket: "SEU_PROJETO.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef"
+        };
+
+        // Inicializa o Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function conectar() {
+            const nome = document.getElementById('gamertag').value.trim();
+            if(!nome) return alert("Por favor, digite uma Gamertag!");
+
+            // Esconde o login e mostra a lista
+            document.getElementById('login-section').style.display = 'none';
+            document.getElementById('lista-online').style.display = 'block';
+
+            // Cria o registro no banco de dados
+            const userRef = db.ref('status/' + nome);
+
+            // Define o status como online
+            userRef.set({
+                nome: nome,
+                status: "Online",
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+
+            // LOGICA CRUCIAL: Remove o nome da lista quando o usuário fechar o navegador
+            userRef.onDisconnect().remove();
+        }
+
+        // ESCUTA EM TEMPO REAL: Atualiza a lista sempre que alguém entra ou sai
+        db.ref('status').on('value', (snapshot) => {
+            const container = document.getElementById('usuarios-container');
+            container.innerHTML = ''; // Limpa a lista para redesenhar
+
+            snapshot.forEach((childSnapshot) => {
+                const user = childSnapshot.val();
+                
+                const div = document.createElement('div');
+                div.className = 'amigo';
+                div.innerHTML = `
+                    <div style="display: flex; align-items: center;">
+                        <span class="status-dot"></span>
+                        <strong>${user.nome}</strong>
+                    </div>
+                    <span style="font-size: 12px; color: #888;">Jogando...</span>
+                `;
+                container.appendChild(div);
+            });
+        });
+    </script>
+</body>
+</html>
