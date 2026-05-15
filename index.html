@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Teste Xbox Live - Conexão Real</title>
+    <style>
+        body { background: #101010; color: white; font-family: 'Segoe UI', Tahoma, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .card { background: #202020; padding: 30px; border-radius: 10px; border-bottom: 4px solid #107c10; width: 300px; text-align: center; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: none; border-radius: 5px; box-sizing: border-box; }
+        button { background: #107c10; color: white; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; width: 100%; border-radius: 5px; }
+        button:hover { background: #158a15; }
+        #lista-online { margin-top: 20px; width: 300px; }
+        .amigo { background: #333; padding: 10px; margin-bottom: 5px; border-radius: 5px; display: flex; justify-content: space-between; animation: pop 0.3s ease; }
+        @keyframes pop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .status-dot { height: 10px; width: 10px; background-color: #107c10; border-radius: 50%; display: inline-block; margin-right: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="card" id="login-section">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/f/f9/Xbox_one_logo.svg" width="50" style="margin-bottom: 10px;">
+        <h2>Entrar na Live</h2>
+        <input type="text" id="gamertag" placeholder="Tua Gamertag...">
+        <button onclick="conectar()">ENTRAR</button>
+    </div>
+
+    <div id="lista-online">
+        <h3>Amigos Online</h3>
+        <div id="usuarios"></div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+
+    <script>
+        // CONFIGURAÇÃO DO FIREBASE (Substitui pelos teus dados do console)
+        const firebaseConfig = {
+            apiKey: "COLA_AQUI_TUA_API_KEY",
+            authDomain: "TEU_PROJETO.firebaseapp.com",
+            databaseURL: "https://TEU_PROJETO-default-rtdb.firebaseio.com",
+            projectId: "TEU_PROJETO",
+            storageBucket: "TEU_PROJETO.appspot.com",
+            messagingSenderId: "NUMERO",
+            appId: "ID_DO_APP"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        let userRef;
+
+        function conectar() {
+            const nome = document.getElementById('gamertag').value;
+            if(!nome) return alert("Digita um nome!");
+
+            // Esconder login
+            document.getElementById('login-section').style.display = 'none';
+
+            // Criar referência do usuário no banco (Cria uma ID única)
+            userRef = db.ref('status/' + nome);
+
+            // Gravar dados e configurar para apagar ao sair (onDisconnect)
+            userRef.set({
+                nome: nome,
+                online: true,
+                last_seen: firebase.database.ServerValue.TIMESTAMP
+            });
+
+            // MÁGICA: Se fechar a aba, o Firebase apaga automaticamente!
+            userRef.onDisconnect().remove();
+        }
+
+        // ESCUTAR MUDANÇAS (Atualiza a lista para todos em tempo real)
+        db.ref('status').on('value', (snapshot) => {
+            const listaDiv = document.getElementById('usuarios');
+            listaDiv.innerHTML = ''; // Limpar lista atual
+            
+            snapshot.forEach((childSnapshot) => {
+                const user = childSnapshot.val();
+                const div = document.createElement('div');
+                div.className = 'amigo';
+                div.innerHTML = `<span><span class="status-dot"></span>${user.nome}</span> <span>Online</span>`;
+                listaDiv.appendChild(div);
+            });
+        });
+    </script>
+</body>
+</html>
